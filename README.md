@@ -1,4 +1,4 @@
-# Brave Workspace Manager (Sidebar)
+# Chrome Workspace Manager (Sidebar)
 
 ## Table of Contents
 
@@ -30,20 +30,25 @@ This Brave/Chromium extension saves and restores tab "workspaces" (all open wind
 
 ### Usage <a name="usage"></a>
 
-- Open the Brave sidebar (if hidden, enable in Brave settings) and click the extension icon.
-- Use "Save current" to store the current session.
-- Click "Switch" on a workspace to save+close the current session and restore the chosen workspace.
-- Use Export/Import for backup/restore.
+- Click the extension icon at the right of the address bar.
+- Click on the "+" to add a new workspace.
+  * Add a unique name
+  * Add an icon from [flaticon](https://www.flaticon.com/search?word=%20&weight=regular&corner=rounded&type=uicon) (click on the wanted icon and copy/paste the text starting with `<i class`)
+  * Click on create and you have a new workspace
+- Click on workspace logo to switch between workspace
+- Right click on workspace logo to delete workspace
+- Click on the arrow (bottom left of the popup) to open import/export options
 
 ### Notes & limitations <a name="notes"></a>
 
-- Restoring attempts to recreate windows and tab groups in the saved order; some tab group metadata may not be identical across browser versions.
 - Switching closes all current tabs before restoring the target workspace. Unsaved work in tabs will be lost—save any forms before switching.
+- Installing this extension on bloated browser is not recommended (tested only on single bloated window)
+- The logos and UI are temporary and kinda bad, I'm sorry for this and will try to improve it.
 
 ### Security <a name="security"></a>
 
 - The extension uses chrome.storage.local to store workspaces on the local machine only.
-- This extension is mainly vibe-coded for learning purposes
+- This extension has been coded using AI
 
 ## Installation <a name="installation"></a>
 
@@ -84,7 +89,7 @@ I still have some other feature I want to see in this extension:
 
 - [ ] Reorder the workspaces in the popup
 - [ ] Enable to send tabs (and groups) into another workspace (e.g right click on tab -> Move to -> Work)
-- [ ] Multiple Window management
+- [ ] Multiple Window management (include installation process)
 - [ ] Add custom sidebar (not sure if possible)
 - [ ] Add sidebar entry for brave native sidebar
 - [ ] Edit Workspace (icon and name)
