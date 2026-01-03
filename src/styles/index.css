@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fix to display flaticon correctly */
+.fi {
+  line-height: 0.5em;
+  vertical-align: -0.15em;
+
+  display: inline-flex;
+}

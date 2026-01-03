@@ -1,0 +1,18 @@
+.context-menu {
+  padding: 2px 0;
+  min-width: fit-content;
+  font-size: 0.75rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.context-menu-item {
+  padding: 2px 6px;
+}
+
+.context-menu-item:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}

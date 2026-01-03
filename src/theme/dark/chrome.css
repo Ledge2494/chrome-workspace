@@ -1,0 +1,19 @@
+/* Chrome-themed variables (dark) — counterpart to light/chrome.css */
+:root {
+  /* chrome-blue tuned for dark */
+  --primary: #64b5f6; /* lighter blue for visibility on dark */
+  --primary-foreground: #0b1220;
+
+  /* accent and brand helpers */
+  --accent: #ff6b35;
+  --muted: #0f1724;
+
+  /* semantic colors */
+  --success: #10b981; /* bright green for visibility on dark */
+  --danger: #ef4444; /* bright red for visibility on dark */
+
+  /* UI colors */
+  --bg: #0b1220;
+  --text: #e6eef8;
+  --border: #24303f;
+}

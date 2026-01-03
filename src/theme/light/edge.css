@@ -1,0 +1,19 @@
+/* Edge-themed variables (light) — based on light/brave.css */
+:root {
+  /* primary color tuned for Edge-like UI (teal/green) */
+  --primary: #0ea5a4; /* teal */
+  --primary-foreground: #ffffff;
+
+  /* accent and brand helpers */
+  --accent: #ff6b35;
+  --muted: #f3f4f6;
+
+  /* semantic colors */
+  --success: #059669; /* darker green for better contrast */
+  --danger: #dc2626; /* darker red for better contrast */
+
+  /* UI colors */
+  --bg: #ffffff;
+  --text: #111827;
+  --border: #e5e7eb;
+}

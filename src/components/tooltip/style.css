@@ -1,0 +1,17 @@
+.tooltip-link {
+  position: relative;
+}
+
+.tooltip-link:hover::after {
+  position: absolute;
+  content: attr(data-tooltip);
+  transform: translateX(-50%) translateY(100%);
+  color: #707070;
+  background: #ffffff;
+  border-radius: 20px;
+  width: max-content;
+  text-align: center;
+  font-size: 12px;
+  padding: 8px;
+  box-shadow: 0px 10px 33px #3333332e;
+}
