@@ -5,7 +5,7 @@ import { WorkspaceList } from './components/WorkspaceList';
 import { WorkspaceCreate } from './components/WorkspaceCreate';
 import { WorkspaceExtra } from './components/WorkspaceExtra';
 
-import '@src/theme/dark/chrome.css';
+import '@src/theme/light/chrome.css';
 
 const Popup = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
