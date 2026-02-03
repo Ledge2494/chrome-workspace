@@ -1,7 +1,7 @@
 {
-  "name": "Brave Workspace Manager (Sidebar)",
+  "name": "Chrome Workspace",
   "version": "0.0.1",
-  "description": "Save and switch tab workspaces from the Brave sidebar, preserving tab groups. Export/import workspaces as JSON.",
+  "description": "Save and switch tab workspaces, preserving tab groups. Export/import workspaces as JSON.",
   "license": "MIT",
   "repository": {
     "type": "git",
