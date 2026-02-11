@@ -1,6 +1,6 @@
 {
   "name": "Chrome Workspace",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Save and switch tab workspaces, preserving tab groups. Export/import workspaces as JSON.",
   "license": "MIT",
   "repository": {
