@@ -1,13 +1,13 @@
 import { Menu, MenuItem } from '@szhsin/react-menu';
 import { useQuery } from '@tanstack/react-query';
 import { exportSingleWorkspace } from '@src/workspaceAPI/export';
-import { getActiveWorkspaceName } from '@src/workspaceAPI/toolbox';
+import { getCurrentActiveWorkspaceName } from '@src/workspaceAPI/toolbox';
 import '../style.css';
 
 export const WorkspaceExtra = () => {
   const { data: activeWorkspace } = useQuery({
     queryKey: ['activeWorkspaceName'],
-    queryFn: getActiveWorkspaceName,
+    queryFn: getCurrentActiveWorkspaceName,
   });
 
   const handleImportClick = async () => {

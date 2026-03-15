@@ -1,40 +1,45 @@
 import { Workspace } from './workspaceType';
-import { readState, writeState, captureWindow } from './toolbox';
+import {
+  readState,
+  writeState,
+  captureWindow,
+  withWriteLock,
+  getActiveWorkspaceName,
+} from './toolbox';
 
-// Save current window session into the active workspace for that window, or create one
+// Save current window session into the active workspace for that window
 export async function saveCurrentWindow(windowId: number): Promise<Workspace> {
-  // Read current state
-  const state = await readState();
-  const activeName = state.activeWorkspaceName;
+  return withWriteLock(async () => {
+    const state = await readState();
 
-  // Default workspace config
-  let workspaceName = 'Default';
-  let logo = 'fi fi-rr-home';
-  let createdAt: number | null = null;
+    // Find which workspace is currently active for this specific window
+    const activeName = await getActiveWorkspaceName(windowId);
 
-  // If an active workspace exists, use its name and logo
-  if (activeName) {
-    const existing = state.workspaces[activeName];
-    workspaceName = existing.name;
-    logo = existing.logo;
-    createdAt = existing.createdAt;
-  } else {
-    // No active workspace; set active to default
-    state.activeWorkspaceName = workspaceName;
-  }
+    let workspaceName = 'Default';
+    let logo = 'fi fi-rr-home';
+    let createdAt: number | null = null;
 
-  // Capture current window tabs + groups
-  const snapshot = await captureWindow(windowId, workspaceName, logo);
+    if (activeName) {
+      const existing = state.workspaces[activeName];
+      if (existing) {
+        workspaceName = existing.name;
+        logo = existing.logo;
+        createdAt = existing.createdAt;
+      }
+    }
 
-  // Save snapshot into state
-  if (createdAt) {
-    snapshot.createdAt = createdAt;
-  }
-  state.workspaces[snapshot.name] = snapshot;
-  await writeState(state);
+    // Capture the window's current tabs + groups
+    const snapshot = await captureWindow(windowId, workspaceName, logo);
 
-  // Return the updated snapshot
-  return snapshot;
+    if (createdAt) {
+      snapshot.createdAt = createdAt;
+    }
+
+    state.workspaces[snapshot.name] = snapshot;
+    await writeState(state);
+
+    return snapshot;
+  });
 }
 
 export default {

@@ -4,7 +4,10 @@ import { WorkspaceButton } from '../../components/workspaceButton/WorkspaceButto
 import { listWorkspaces } from '@src/workspaceAPI/list';
 import { deleteWorkspace } from '@src/workspaceAPI/delete';
 import { Workspace } from '@src/workspaceAPI/workspaceType';
-import { getActiveWorkspaceName } from '@src/workspaceAPI/toolbox';
+import {
+  getCurrentActiveWorkspaceName,
+  getActiveWorkspaces,
+} from '@src/workspaceAPI/toolbox';
 import { BackgroundMessageEnum } from '@src/workspaceAPI/listener';
 import useContextMenu from '@src/components/contextMenu/useContextMenu';
 
@@ -36,7 +39,12 @@ export const WorkspaceList = ({
     data: activeWorkspace,
   } = useQuery({
     queryKey: ['activeWorkspaceName'],
-    queryFn: getActiveWorkspaceName,
+    queryFn: async () => (await getCurrentActiveWorkspaceName()) || '',
+  });
+
+  const { data: allActiveWorkspaces = {} } = useQuery({
+    queryKey: ['allActiveWorkspaces'],
+    queryFn: getActiveWorkspaces,
   });
 
   const workspaceMutationDelete = useMutation({
@@ -65,9 +73,12 @@ export const WorkspaceList = ({
 
   const handleSwitchWorkspace = useCallback(
     (workspaceName: string) => {
-      chrome.runtime.sendMessage({
-        type: BackgroundMessageEnum.SWITCH,
-        payload: { workspaceName },
+      chrome.windows.getCurrent(w => {
+        if (typeof w.id !== 'number') return;
+        chrome.runtime.sendMessage({
+          type: BackgroundMessageEnum.SWITCH,
+          payload: { workspaceName, windowId: w.id },
+        });
       });
       queryClient.invalidateQueries({ queryKey: ['activeWorkspaceName'] });
       console.log('Open workspace:', workspaceName);
@@ -97,12 +108,7 @@ export const WorkspaceList = ({
     [handleSwitchWorkspace, setItems, workspaceMutationDelete]
   );
 
-  if (
-    isWorkspaceListPending ||
-    isWorkspaceListError ||
-    isActiveWorkspacePending ||
-    isActiveWorkspaceError
-  ) {
+  if (isWorkspaceListPending || isWorkspaceListError) {
     return null;
   }
 
@@ -120,16 +126,32 @@ export const WorkspaceList = ({
         <div
           key={wk.name}
           onContextMenu={e => {
+            if (activeWorkspace === undefined) return;
+            const isActiveInOtherWindow =
+              wk.name in allActiveWorkspaces && wk.name !== activeWorkspace;
+            if (isActiveInOtherWindow) return;
             workspaceMenuItems(wk);
             handleContextMenu(e);
           }}
         >
           <WorkspaceButton
             className={
-              wk.name === activeWorkspace ? 'workspace-button-active' : ''
+              wk.name === activeWorkspace
+                ? 'workspace-button-active'
+                : wk.name in allActiveWorkspaces
+                ? 'workspace-button-blocked'
+                : activeWorkspace === undefined
+                ? 'workspace-button-disable'
+                : ''
             }
             logo={wk.logo}
-            onClick={() => handleSwitchWorkspace(wk.name)}
+            onClick={() => {
+              const isActiveInOtherWindow =
+                wk.name in allActiveWorkspaces && wk.name !== activeWorkspace;
+              if (activeWorkspace !== undefined && !isActiveInOtherWindow) {
+                handleSwitchWorkspace(wk.name);
+              }
+            }}
           />
         </div>
       ))}

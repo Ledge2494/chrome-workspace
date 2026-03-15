@@ -117,9 +117,8 @@ export async function importFromJson(
     if (!mergeImportedWorkspaces(payload as StoredState)) {
       console.error('Failed to merge imported workspaces with existing state');
       return null;
-    } else {
-      return Object.values((payload as StoredState).workspaces);
     }
+    return Object.values((payload as StoredState).workspaces);
   }
 
   // Apply the final import with the converted payload

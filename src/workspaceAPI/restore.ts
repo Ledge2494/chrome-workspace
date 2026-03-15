@@ -1,6 +1,137 @@
-import { readState } from './toolbox';
-import { suspendAutoSave, resumeAutoSave } from './listener';
+import { readState, writeState, withWriteLock } from './toolbox';
+import {
+  suspendAutoSave,
+  resumeAutoSave,
+  setRestoringAfterRestart,
+  clearRestoringAfterRestart,
+} from './listener';
 import { StoredTab } from './workspaceType';
+
+// Check if a session restart has occurred by comparing stored window IDs with actual windows.
+// Returns true if any stored window IDs no longer exist in the current browser.
+export async function isSessionRestart(): Promise<boolean> {
+  const state = await readState();
+  const storedWindowIds = Object.values(state.activeWorkspaces);
+
+  if (storedWindowIds.length === 0) {
+    // No active workspaces stored, not a restart scenario
+    return false;
+  }
+
+  // Get all currently open windows
+  const currentWindows = await new Promise<chrome.windows.Window[]>(resolve =>
+    chrome.windows.getAll(w => resolve(w))
+  );
+
+  const currentWindowIds = new Set(
+    currentWindows
+      .filter(w => w.type === 'normal' && typeof w.id === 'number')
+      .map(w => w.id as number)
+  );
+
+  // If any stored window ID doesn't exist in current windows, it's a restart
+  return storedWindowIds.some(id => !currentWindowIds.has(id));
+}
+
+// Restore all workspaces after a browser restart.
+// Adjusts the number of windows to match the number of previously active workspaces,
+// then restores their content in order.
+export async function restoreAllWorkspacesAfterRestart(): Promise<void> {
+  console.log('Detected session restart, beginning workspace restoration...');
+
+  setRestoringAfterRestart(true);
+  try {
+    // Suspend auto-save during the entire restoration process
+    suspendAutoSave();
+
+    // Save the workspace names that were active before clearing
+    let activeWorkspaceNames: string[] = [];
+    await withWriteLock(async () => {
+      const state = await readState();
+      activeWorkspaceNames = Object.keys(state.activeWorkspaces);
+      state.activeWorkspaces = {};
+      await writeState(state);
+    });
+
+    // Get all current normal windows
+    const allWindows = await chrome.windows.getAll();
+    const normalWindows = allWindows.filter(w => w.type === 'normal');
+    const normalWindowIds = normalWindows
+      .filter(w => typeof w.id === 'number')
+      .map(w => w.id as number);
+
+    const neededWindowCount = activeWorkspaceNames.length;
+    const currentWindowCount = normalWindowIds.length;
+
+    // Close excess windows if we have more than needed
+    if (currentWindowCount > neededWindowCount) {
+      const windowsToClose = normalWindowIds.slice(neededWindowCount);
+      for (const windowId of windowsToClose) {
+        try {
+          await new Promise<void>(resolve => {
+            chrome.windows.remove(windowId, () => resolve());
+          });
+          console.debug(`Closed excess window ${windowId}`);
+        } catch (e) {
+          console.warn('Failed to close window:', e);
+        }
+      }
+    }
+
+    // Create new windows if we need more
+    const windowsToUse: number[] = normalWindowIds.slice(0, neededWindowCount);
+    while (windowsToUse.length < neededWindowCount) {
+      try {
+        const newWindow = await chrome.windows.create();
+        if (newWindow && typeof newWindow.id === 'number') {
+          windowsToUse.push(newWindow.id);
+          console.debug(`Created new window ${newWindow.id}`);
+        }
+      } catch (e) {
+        console.error('Failed to create window:', e);
+      }
+    }
+
+    // Read fresh state after window adjustments
+    const state = await readState();
+
+    // Restore each workspace into its corresponding window
+    for (let i = 0; i < activeWorkspaceNames.length; i++) {
+      const workspaceName = activeWorkspaceNames[i];
+      const windowId = windowsToUse[i];
+
+      const ws = state.workspaces[workspaceName];
+      if (!ws) {
+        console.warn(`Workspace not found: ${workspaceName}`);
+        continue;
+      }
+
+      // Assign workspace to the window
+      await withWriteLock(async () => {
+        const latestState = await readState();
+        latestState.activeWorkspaces[workspaceName] = windowId;
+        await writeState(latestState);
+      });
+
+      // Restore the workspace's tabs and groups into the window
+      try {
+        await restoreWorkspace(windowId, workspaceName);
+        console.log(
+          `Restored workspace "${workspaceName}" to window ${windowId}`
+        );
+      } catch (e) {
+        console.error(`Failed to restore workspace "${workspaceName}":`, e);
+      }
+    }
+
+    console.log('Workspace restoration completed');
+  } catch (e) {
+    console.error('Error during workspace restoration:', e);
+  } finally {
+    resumeAutoSave();
+    clearRestoringAfterRestart();
+  }
+}
 
 // Restore a workspace into the given window. We create the saved tabs first
 // so the window stays alive, then remove the original tabs that existed

@@ -24,6 +24,12 @@ main {
   border: 2px solid var(--danger) !important;
 }
 
+.workspace-button-disable {
+  border: 1px solid var(--border) !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .extra-options-menu {
   padding: 2px 0 !important;
   min-width: fit-content !important;
@@ -41,4 +47,9 @@ main {
 .extra-options-menu-item:hover {
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
+}
+
+.logo-hint[target='_blank']:after {
+  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVR42qXKwQkAIAxDUUdxtO6/RBQkQZvSi8I/pL4BoGw/XPkh4XigPmsUgh0626AjRsgxHTkUThsG2T/sIlzdTsp52kSS1wAAAABJRU5ErkJggg==);
+  margin: 0 3px 0 5px;
 }

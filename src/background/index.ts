@@ -1,9 +1,12 @@
-import { createDefaultWorkspace } from '@src/workspaceAPI/create';
 import {
   installAutoSaveListeners,
   installBackgroundListeners,
 } from '@src/workspaceAPI/listener';
 import { updateState } from '@src/workspaceAPI/update';
+import {
+  isSessionRestart,
+  restoreAllWorkspacesAfterRestart,
+} from '@src/workspaceAPI/restore';
 
 // Run Update process to convert old workspace formats to the current format on background load
 (async () => {
@@ -17,8 +20,18 @@ import { updateState } from '@src/workspaceAPI/update';
   await installBackgroundListeners();
   console.debug('Background listeners installed');
 
-  // Create a default workspace on background load
-  await createDefaultWorkspace();
-  console.debug('Default workspace creation attempted');
+  // Check for session restart and restore workspaces if needed
+  try {
+    const isRestart = await isSessionRestart();
+    if (isRestart) {
+      console.log('Session restart detected, triggering workspace restoration');
+      await restoreAllWorkspacesAfterRestart();
+    } else {
+      console.debug('No session restart detected');
+    }
+  } catch (err) {
+    console.error('Error during session restart check:', err);
+  }
+
   console.log('background loaded');
 })();

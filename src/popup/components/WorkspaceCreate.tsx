@@ -115,7 +115,7 @@ export const WorkspaceCreate = ({
         <div>
           <input
             type='text'
-            style={{ marginRight: '5px' }}
+            style={{ marginRight: '5px', width: '80%' }}
             placeholder='Workspace Icon'
             name='icon'
             ref={logoInputRef}
@@ -124,6 +124,12 @@ export const WorkspaceCreate = ({
             className={createWorkspaceLogo}
             style={{ fontSize: '16px' }}
             ref={logoImgRef}
+          />
+          <a
+            className='logo-hint'
+            href='https://www.flaticon.com/search?word=%20&weight=regular&corner=rounded&type=uicon'
+            target='_blank'
+            rel='noopener noreferrer'
           />
         </div>
         <button type='submit'>Create</button>

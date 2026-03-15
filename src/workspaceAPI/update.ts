@@ -1,6 +1,7 @@
 import { readState, writeState } from './toolbox';
 import { importFromJson } from './import';
 import { StoredState } from './workspaceType';
+import packageJson from '../../package.json';
 
 /**
  * Update the stored state by running it through the importer process.
@@ -9,6 +10,11 @@ import { StoredState } from './workspaceType';
 export async function updateState(): Promise<void> {
   // Read the current state
   const state = await readState();
+
+  if (state.version === packageJson.version) {
+    console.debug('State is already at the current version. No update needed.');
+    return;
+  }
 
   // Convert the state to JSON for the importer process
   const stateJson = JSON.stringify(state);

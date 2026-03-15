@@ -1,12 +1,32 @@
 import { saveCurrentWindow } from './store';
 import throttle from 'lodash/throttle';
 import { switchWorkspace } from './switch';
+import { restoreWorkspace } from './restore';
+import {
+  readState,
+  writeState,
+  withWriteLock,
+  clearActiveWorkspaceForWindow,
+  buildBlankWorkspace,
+} from './toolbox';
 
 // per-window throttled save functions
 const throttles = new Map<number, ReturnType<typeof throttle>>();
 
 // when suspended, scheduleSave becomes a no-op; used around restore operations
 let suspended = false;
+
+// when true, window creation is being driven by bulk restoration after session restart
+// (prevents handleNewWindow from reassigning workspaces)
+let restoringAfterRestart = false;
+
+export function setRestoringAfterRestart(value: boolean) {
+  restoringAfterRestart = value;
+}
+
+export function clearRestoringAfterRestart() {
+  restoringAfterRestart = false;
+}
 
 function scheduleSave(windowId: number) {
   if (suspended) return;
@@ -57,14 +77,69 @@ export function resumeAutoSave() {
   suspended = false;
 }
 
+// Assign a workspace to a newly opened window, then restore it.
+// Picks the first unassigned workspace from workspaceOrder, or creates one.
+// (Skipped during session restart restoration, as the workspace is already assigned)
+async function handleNewWindow(windowId: number): Promise<void> {
+  // During bulk restoration after session restart, workspace assignment is handled by
+  // restoreAllWorkspacesAfterRestart(), so we skip processing here
+  if (restoringAfterRestart) {
+    console.debug(
+      `Skipping handleNewWindow for ${windowId} (restoring after restart)`
+    );
+    return;
+  }
+
+  let assignedWorkspaceName: string | null = null;
+
+  await withWriteLock(async () => {
+    const state = await readState();
+
+    // Find the first workspace in workspaceOrder not currently active anywhere
+    const available = state.workspaceOrder.find(
+      name => !(name in state.activeWorkspaces)
+    );
+
+    if (available) {
+      assignedWorkspaceName = available;
+      state.activeWorkspaces[available] = windowId;
+    } else {
+      // All workspaces are taken – create a fresh one for this window
+      const wk = buildBlankWorkspace(`Workspace ${Date.now()}`);
+      state.workspaces[wk.name] = wk;
+      state.workspaceOrder.push(wk.name);
+      state.activeWorkspaces[wk.name] = windowId;
+      assignedWorkspaceName = wk.name;
+    }
+
+    await writeState(state);
+  });
+
+  if (!assignedWorkspaceName) return;
+
+  // Cancel any stray save that may have queued before the assignment completed
+  cancelScheduledSave(windowId);
+
+  // Restore the assigned workspace's tabs into the new window
+  await restoreWorkspace(windowId, assignedWorkspaceName);
+}
+
 // wire listeners (idempotent)
 let listenersInstalled = false;
 export function installAutoSaveListeners() {
   if (listenersInstalled) return;
   listenersInstalled = true;
 
+  // Assign a workspace to each new normal window and restore it
   chrome.windows.onCreated.addListener(w => {
-    if (typeof w.id === 'number') scheduleSave(w.id);
+    if (typeof w.id !== 'number') return;
+    if (w.type !== 'normal') return;
+    handleNewWindow(w.id).catch(console.error);
+  });
+
+  // When a window closes, free its workspace so it can be reused
+  chrome.windows.onRemoved.addListener(windowId => {
+    clearActiveWorkspaceForWindow(windowId).catch(console.error);
   });
 
   chrome.tabs.onCreated.addListener(tab => {
@@ -103,7 +178,8 @@ export const enum BackgroundMessageEnum {
 
 export type BackgroundMessage = {
   type: BackgroundMessageEnum.SWITCH;
-  payload: { workspaceName: string };
+  // windowId: the window the popup belongs to (where the switch should happen)
+  payload: { workspaceName: string; windowId: number };
 };
 
 export type BackgroundResponse = { onGoing: boolean } | { error?: string };
@@ -113,11 +189,10 @@ export function installBackgroundListeners() {
   if (backgroundListenersInstalled) return;
   backgroundListenersInstalled = true;
 
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     switch (message.type) {
       case BackgroundMessageEnum.SWITCH:
-        // on workspace switch, save the current window immediately
-        switchWorkspace(message.payload.workspaceName)
+        switchWorkspace(message.payload.workspaceName, message.payload.windowId)
           .catch(console.error)
           .then(() => {
             sendResponse({ onGoing: false });
