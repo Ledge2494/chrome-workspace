@@ -4,6 +4,7 @@ import {
   StoredGroup,
   StoredState,
 } from './workspaceType';
+import packageJson from '../../package.json';
 
 const STORAGE_KEY = 'workspaces_state_v1';
 
@@ -13,7 +14,12 @@ export async function readState(): Promise<StoredState> {
       const state: StoredState =
         res && res[STORAGE_KEY]
           ? (res[STORAGE_KEY] as StoredState)
-          : ({ workspaces: {}, activeWorkspaceName: undefined } as StoredState);
+          : ({
+              version: packageJson.version,
+              workspaces: {},
+              activeWorkspaces: {},
+              workspaceOrder: [],
+            } as StoredState);
       resolve(state);
     });
   });

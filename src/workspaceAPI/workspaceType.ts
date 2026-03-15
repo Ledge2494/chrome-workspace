@@ -27,10 +27,14 @@ export interface Workspace {
 }
 
 export interface StoredState {
+  // format version (e.g. "0.0.2")
+  version: string;
   // mapping workspace name -> workspace
   workspaces: Record<string, Workspace>;
-  // current active workspace name (global for all windows)
-  activeWorkspaceName?: string;
+  // mapping workspace name -> window ID for currently active workspaces
+  activeWorkspaces: Record<string, number>;
+  // ordered list of workspace names
+  workspaceOrder: string[];
 }
 
 export type PartialStoredState = Partial<StoredState>;
