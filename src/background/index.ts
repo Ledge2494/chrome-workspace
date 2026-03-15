@@ -3,16 +3,22 @@ import {
   installAutoSaveListeners,
   installBackgroundListeners,
 } from '@src/workspaceAPI/listener';
+import { updateState } from '@src/workspaceAPI/update';
 
-// Setup auto-save listeners
-installAutoSaveListeners();
-console.debug('Auto-save listeners installed');
+// Run Update process to convert old workspace formats to the current format on background load
+(async () => {
+  await updateState();
+  console.debug('State update process completed');
 
-installBackgroundListeners();
-console.debug('Background listeners installed');
+  // Setup auto-save listeners
+  await installAutoSaveListeners();
+  console.debug('Auto-save listeners installed');
 
-// Create a default workspace on background load
-createDefaultWorkspace();
-console.debug('Default workspace creation attempted');
+  await installBackgroundListeners();
+  console.debug('Background listeners installed');
 
-console.log('background loaded');
+  // Create a default workspace on background load
+  await createDefaultWorkspace();
+  console.debug('Default workspace creation attempted');
+  console.log('background loaded');
+})();
