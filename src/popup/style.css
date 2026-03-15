@@ -20,6 +20,10 @@ main {
   border: 2px solid var(--primary) !important;
 }
 
+.workspace-button-blocked {
+  border: 2px solid var(--danger) !important;
+}
+
 .extra-options-menu {
   padding: 2px 0 !important;
   min-width: fit-content !important;
