@@ -1,0 +1,37 @@
+@startuml
+title Activity - Workspace Export
+
+start
+:User selects export mode\n(single/multiple/all);
+
+if (Export single?) then (yes)
+  :exportWorkspacesToJson([name]);
+else if (Export multiple?) then (yes)
+  :exportWorkspacesToJson([names[]]);
+else
+  :exportAllWorkspacesToJson();
+endif
+
+:Collect WorkspaceItem instances\nfrom workspaceMap;
+
+:For each selected WorkspaceItem;
+while (More workspaces?) is (yes)
+  :Serialize to Workspace model;
+  :Add tabs array;
+  :Add groups array;
+  :Add metadata (name, logo, timestamps);
+endwhile (no)
+
+:Build StoredState structure;
+:Set version field;
+:JSON.stringify();
+
+:Generate JSON string;
+:Create blob;
+:Generate filename\n(workspace-export-YYYYMMDDhhmmss.json);
+:Create download link;
+:Trigger browser download;
+
+stop
+
+@enduml

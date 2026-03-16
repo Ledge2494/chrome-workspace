@@ -1,0 +1,163 @@
+@startuml
+title Brave Workspace - Class/Module Diagram
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "UI Layer" {
+	class Popup
+	class WorkspaceList
+	class WorkspaceCreate
+	class WorkspaceExtra
+}
+
+package "Background Layer" {
+	class BackgroundEntry {
+		+bootstrap()
+	}
+
+	class WorkspaceListener {
+		+installAutoSaveListeners()
+		+installBackgroundListeners()
+		+installSessionListeners()
+		-scheduleSave(windowId)
+		-handleNewWindow(windowId)
+		-handleEndWindow(windowId)
+		-detectSessionRestart(): boolean
+		-handleSessionStart()
+	}
+}
+
+package "Workspace Domain" {
+	class WorkspaceService {
+        - workspaceMap: Record<string, WorkspaceItem>
+        - workspaceOrder: string[]
+        ' Active workspace mapping is stored in two maps for efficient lookup in both directions (workspaceName <-> windowId)
+        ' Workspace name -> windowId
+        - workspaceActiveMap: Record<string, number>
+        ' windowId -> workspaceName
+        - workspaceActiveReverseMap: Record<number, string>
+        - version: string
+        +createWorkspace(name, logo): WorkspaceItem
+        +retrieveWorkspace(name, opt): WorkspaceItem | null
+        +listWorkspaces(orderType, opt): WorkspaceItem[]
+        +deleteWorkspace(name): boolean
+		+switchWorkspace(targetName, windowId): boolean
+        +importWorkspacesFromJson(json): boolean
+        +exportAllWorkspacesToJson(): Record<string, boolean>
+        +exportWorkspacesToJson(names): Record<string, boolean>
+	}
+
+    class WorkspaceBuilder {
+        -workspace: WorkspaceItem
+        +reset(): void
+        +buildBlankWorkspace(name, logo): WorkspaceBuilder
+        +buildTabsSnapshot(windowId): WorkspaceBuilder
+        +validateBuild() : boolean
+        +getWorkspace(): WorkspaceItem
+    }
+
+    class WorkspaceItem {
+        +name: string
+        +logo: string
+        +createdAt: number
+        +updatedAt: number
+        +tabs: StoredTab[]
+        +groups: StoredGroup[]
+        +activeWindowId: number | null
+        +static validateName(name) : boolean
+        +static generateUniqueName(baseName, existingNames) : string
+        +static generateDefaultLogo() : string
+        +captureWindowSnapshot(windowId) : boolean
+        +isActive(): boolean
+        +setActive(windowId | null): boolean
+    }
+
+	class WorkspaceStore {
+		+version: string
+        +workspaceMap: Record<string, Workspace>
+        +workspaceOrder: string[]
+        +workspaceActive: Record<string, number>
+        -mutex: mutex
+        +LoadFromStorage()
+        +SaveToStorage()
+        -readState() : StoredState
+        -writeState(state: StoredState) : void
+	}
+}
+
+package "Data Model" {
+	class StoredState {
+		+version: string
+		+workspaces: Record<string, Workspace>
+		+activeWorkspaces: Record<string, number>
+		+workspaceOrder: string[]
+	}
+
+	class Workspace {
+		+name: string
+		+logo: string
+		+createdAt: number
+		+updatedAt: number
+		+tabs: StoredTab[]
+		+groups: StoredGroup[]
+	}
+
+	class StoredTab {
+		+url: string
+		+title: string
+		+active: boolean
+		+pinned: boolean
+		+groupIndex: number
+	}
+
+	class StoredGroup {
+		+title: string
+		+color: ColorEnum
+		+collapsed: boolean
+	}
+}
+
+package "External APIs" {
+	interface ChromeStorage
+	interface ChromeRuntime
+	interface ChromeWindows
+	interface ChromeTabs
+	interface ChromeTabGroups
+}
+
+Popup --> WorkspaceList
+Popup --> WorkspaceCreate
+Popup --> WorkspaceExtra
+
+WorkspaceList ..> WorkspaceService : list/delete
+WorkspaceCreate ..> WorkspaceService : create
+WorkspaceExtra ..> WorkspaceService : import/export
+WorkspaceList ..> WorkspaceListener : SWITCH message
+
+BackgroundEntry --> WorkspaceListener
+WorkspaceListener --> WorkspaceService : onMessage(SWITCH)
+WorkspaceListener --> WorkspaceStore : autosave events
+
+WorkspaceService --> WorkspaceStore : persist
+WorkspaceService --> WorkspaceBuilder : build workspace
+WorkspaceService *-- WorkspaceItem : manages
+
+WorkspaceBuilder --> WorkspaceItem : creates
+
+WorkspaceStore *-- WorkspaceItem : stores
+WorkspaceStore --> StoredState : reads/writes
+StoredState *-- Workspace
+Workspace *-- StoredTab
+Workspace *-- StoredGroup
+
+WorkspaceItem *-- StoredTab
+WorkspaceItem *-- StoredGroup
+
+WorkspaceListener ..> ChromeRuntime
+WorkspaceStore ..> ChromeStorage
+WorkspaceStore ..> ChromeWindows
+WorkspaceStore ..> ChromeTabs
+WorkspaceStore ..> ChromeTabGroups
+
+@enduml

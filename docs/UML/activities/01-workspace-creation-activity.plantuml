@@ -1,0 +1,26 @@
+@startuml
+title Activity - Workspace Creation
+
+start
+:User submits form\n(name, logo);
+:WorkspaceService.createWorkspace(name, logo);
+:Validate name uniqueness;
+
+if (Name already exists?) then (yes)
+  :Return error;
+  stop
+else (no)
+  :WorkspaceBuilder.buildBlankWorkspace(name, logo);
+  :Create WorkspaceItem\nwith default chrome://newtab/;
+  :Add to workspaceMap;
+  :Append to workspaceOrder;
+  :WorkspaceStore.SaveToStorage();
+  :WorkspaceStore acquires mutex internally;
+  :Write StoredState to chrome.storage.local;
+  :Release mutex;
+  :Return success;
+end
+
+stop
+
+@enduml

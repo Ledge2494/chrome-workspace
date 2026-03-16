@@ -1,0 +1,44 @@
+@startuml
+title Activity - Workspace Window Capture
+
+start
+:WorkspaceListener detects tab/window change;
+:scheduleSave(windowId)\n[debounced 500ms];
+:WorkspaceItem.captureWindowSnapshot(windowId);
+
+:Query chrome.windows.get(windowId);
+:Query chrome.tabs.query({windowId});
+:Query chrome.tabGroups.query({windowId});
+
+:For each chrome.tabs entry;
+while (More tabs?) is (yes)
+  :Create StoredTab object;
+  :Extract url, title, active;
+  :Extract pinned, index, favIconUrl;
+  :Extract discarded status;
+  :Map groupId to groupIndex;
+endwhile (no)
+
+:For each chrome.tabGroup entry;
+while (More tab groups?) is (yes)
+  :Create StoredGroup object;
+  :Extract title, color;
+  :Extract collapsed status;
+endwhile (no)
+
+:Build StoredTab[] array;
+:Build StoredGroup[] array;
+:Update WorkspaceItem.tabs;
+:Update WorkspaceItem.groups;
+:Set updatedAt timestamp;
+
+:WorkspaceListener.notifySaveRequired();
+:WorkspaceService updates workspaceMap;
+:WorkspaceStore.SaveToStorage();
+:WorkspaceStore acquires mutex internally;
+:Serialize and persist to chrome.storage.local;
+:Release mutex;
+
+stop
+
+@enduml

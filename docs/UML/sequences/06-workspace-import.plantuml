@@ -1,0 +1,46 @@
+@startuml
+title Sequence - Workspace Import
+
+actor User
+participant "ImportPage\nUI" as UI
+participant "WorkspaceService" as Service
+participant "WorkspaceBuilder" as Builder
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+User -> UI: Upload JSON file
+UI -> UI: parse JSON
+UI -> Service: importWorkspacesFromJson(json)
+
+Service -> Service: validate JSON schema
+Service -> Service: detect version
+
+alt Invalid schema
+  Service --> UI: Error("invalid format")
+else Version mismatch
+  Service -> Service: apply migration converters\n(v0.0.1 -> v0.0.2 -> current)
+  Service --> Service: normalize schema
+else Valid
+end
+
+Service -> Service: extract workspaces\nfrom JSON
+
+alt Merge mode
+  Service -> Service: check for name conflicts
+  Service -> Service: deduplicate/rename as needed
+  Service -> Service: merge into workspaceMap
+else Replace mode
+  Service -> Service: clear workspaceMap
+end
+
+Service -> Store: SaveToStorage()
+Store -> Store: acquire mutex
+Store -> Storage: set(STORAGE_KEY, state)
+Storage --> Store: ok
+Store -> Store: release mutex
+Store --> Service: save complete
+
+Service --> UI: success(imported count)
+UI -> UI: refresh list
+
+@enduml

@@ -1,0 +1,45 @@
+@startuml
+title Sequence - WorkspaceService Loading from Storage
+
+participant "Background\nBootstrap" as Bootstrap
+participant "WorkspaceService" as Service
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+Bootstrap -> Service: new WorkspaceService()
+
+Service -> Service: initialize empty\nworkspaceMap, workspaceOrder
+
+Service -> Store: LoadFromStorage()
+Store -> Store: acquire mutex
+Store -> Storage: get(STORAGE_KEY)
+Storage --> Store: StoredState (or null)
+
+alt Data exists in storage
+  Store -> Store: deserialize StoredState\nto WorkspaceItem instances
+  Store -> Store: build workspaceMap\nfrom Workspace entries
+  Store -> Store: load workspaceOrder\nfrom storage
+  Store -> Store: release mutex
+  Store --> Service: workspaceMap + workspaceOrder
+  
+  Service -> Service: check for missing workspaces\nnot in workspaceOrder
+  alt Missing workspaces found
+    Service -> Service: append missing workspaces\nto workspaceOrder
+    Service -> Store: SaveToStorage()
+    Store -> Store: acquire mutex
+    Store -> Storage: set(STORAGE_KEY, state)
+    Storage --> Store: ok
+    Store -> Store: release mutex
+    Store --> Service: save complete
+  end
+else First install
+  Store -> Store: release mutex
+  Store --> Service: empty state
+end
+
+Service -> Service: load activeWorkspaces mapping\n(workspace name -> windowId)
+Service -> Service: rebuild activeWorkspaceReverseMap\n(windowId -> workspace name)
+
+Service --> Bootstrap: ready
+
+@enduml

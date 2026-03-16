@@ -1,0 +1,35 @@
+@startuml
+title Sequence - Workspace Deletion
+
+actor User
+participant "PopupUI\nWorkspaceList" as Popup
+participant "WorkspaceService" as Service
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+User -> Popup: Click delete on workspace
+Popup -> Service: deleteWorkspace(name)
+
+Service -> Service: check if workspace exists
+Service -> Service: check if workspace active\nin any window
+
+alt Workspace not found
+  Service --> Popup: Error("not found")
+else Workspace is active
+  Service --> Popup: Error("cannot delete active")
+else Safe to delete
+  Service -> Service: remove from workspaceMap
+  Service -> Service: remove from workspaceOrder
+  
+  Service -> Store: SaveToStorage()
+  Store -> Store: acquire mutex
+  Store -> Storage: set(STORAGE_KEY, state)
+  Storage --> Store: ok
+  Store -> Store: release mutex
+  Store --> Service: save complete
+  
+  Service --> Popup: success(true)
+  Popup -> Popup: refresh list
+end
+
+@enduml

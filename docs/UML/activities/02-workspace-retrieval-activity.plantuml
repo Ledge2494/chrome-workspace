@@ -1,0 +1,24 @@
+@startuml
+title Activity - Workspace Retrieval (Create on Fly)
+
+start
+:retrieveWorkspace(name, opt);
+:Search workspaceMap;
+
+if (Workspace found?) then (yes)
+  :Return WorkspaceItem;
+  stop
+else (no)
+  if (createIfMissing=true?) then (yes)
+    :Execute 01-workspace-creation activity;
+    :Return new WorkspaceItem;
+    stop
+  else (no)
+    :Return null;
+    stop
+  endif
+endif
+
+stop
+
+@enduml

@@ -1,0 +1,70 @@
+direction: right
+
+title: "Brave Workspace - Use Case Diagram"
+
+user: {
+	label: "Browser User"
+	shape: person
+}
+
+popup: {
+	label: "Popup UI"
+	shape: rectangle
+}
+
+storage: {
+	label: "chrome.storage.local"
+	shape: cylinder
+}
+
+system: {
+	label: "Brave Workspace Extension"
+	shape: rectangle
+
+	uc_list: {
+		label: "List Workspaces"
+		shape: oval
+	}
+
+	uc_create: {
+		label: "Create Workspace"
+		shape: oval
+	}
+
+	uc_switch: {
+		label: "Switch Workspace"
+		shape: oval
+	}
+
+	uc_delete: {
+		label: "Delete Workspace"
+		shape: oval
+	}
+
+	uc_export: {
+		label: "Export Workspace(s)"
+		shape: oval
+	}
+
+	uc_import: {
+		label: "Import Workspace(s)"
+		shape: oval
+	}
+}
+
+user -> system.uc_list
+user -> system.uc_create
+user -> system.uc_switch
+user -> system.uc_delete
+user -> system.uc_export
+user -> system.uc_import
+
+system.uc_list -> popup: "via UI"
+system.uc_create -> popup: "via UI"
+system.uc_switch -> popup: "send message"
+
+system.uc_create -> storage
+system.uc_delete -> storage
+system.uc_switch -> storage
+system.uc_export -> storage
+system.uc_import -> storage

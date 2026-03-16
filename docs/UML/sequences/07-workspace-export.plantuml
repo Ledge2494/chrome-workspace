@@ -1,0 +1,32 @@
+@startuml
+title Sequence - Workspace Export
+
+actor User
+participant "PopupUI\nWorkspaceExtra" as UI
+participant "WorkspaceService" as Service
+
+User -> UI: Click export button\n(single/multiple/all)
+
+alt Export single
+  UI -> Service: exportWorkspacesToJson([name])
+else Export multiple
+  UI -> Service: exportWorkspacesToJson([names[]])
+else Export all
+  UI -> Service: exportAllWorkspacesToJson()
+end
+
+Service -> Service: collect WorkspaceItem\ninstances from workspaceMap
+
+Service -> Service: serialize to JSON:
+Service -> Service: for each WorkspaceItem\n  convert to Workspace model
+Service -> Service: build StoredState structure
+Service -> Service: JSON.stringify()
+
+Service --> UI: return JSON string
+
+UI -> UI: create blob
+UI -> UI: generate filename\nworkspace-export-timestamp.json
+
+UI -> UI: trigger download\nvia <a href> click
+
+@enduml

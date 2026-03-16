@@ -1,0 +1,36 @@
+@startuml
+title Sequence - Workspace Creation
+
+actor User
+participant "PopupUI\nWorkspaceCreate" as Popup
+participant "WorkspaceService" as Service
+participant "WorkspaceBuilder" as Builder
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+User -> Popup: Submit name + logo
+Popup -> Service: createWorkspace(name, logo)
+
+Service -> Service: validate uniqueness\nagainst workspaceMap
+
+alt Name already exists
+  Service --> Popup: Error("workspace exists")
+else Valid name
+  Service -> Builder: buildBlankWorkspace(name, logo)
+  Builder -> Builder: create WorkspaceItem\nwith default newtab
+  Builder --> Service: WorkspaceItem
+  
+  Service -> Service: add to workspaceMap\nappend to workspaceOrder
+  
+  Service -> Store: SaveToStorage()
+  Store -> Store: acquire mutex
+  Store -> Storage: set(STORAGE_KEY, state)
+  Storage --> Store: ok
+  Store -> Store: release mutex
+  Store --> Service: save complete
+  
+  Service --> Popup: success(WorkspaceItem)
+  Popup -> Popup: invalidate cache
+end
+
+@enduml

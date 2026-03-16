@@ -1,0 +1,29 @@
+@startuml
+title Activity - Workspace Deletion
+
+start
+:User requests deletion\n(workspace name);
+:deleteWorkspace(name);
+:Check if workspace exists;
+
+if (Exists?) then (no)
+  :Return error;
+  stop
+else (yes)
+  :Check if active in any window;
+  if (Is active?) then (yes)
+    :Return error("workspace active");
+    stop
+  else (no)
+    :Remove from workspaceMap;
+    :Remove from workspaceOrder;
+    :WorkspaceStore.SaveToStorage();
+    :WorkspaceStore acquires mutex internally;
+    :Write StoredState to chrome.storage.local;
+    :Release mutex;
+    :Return success;
+    stop
+  endif
+endif
+
+@enduml

@@ -1,0 +1,42 @@
+@startuml
+title Activity - WorkspaceService Loading from Storage
+
+start
+:Background bootstrap starts\nWorkspaceService initialization;
+:Initialize empty workspaceMap;
+:Initialize empty workspaceOrder;
+:WorkspaceStore.LoadFromStorage();
+:WorkspaceStore acquires mutex internally;
+:Query chrome.storage.local\nfor STORAGE_KEY;
+
+if (Data exists?) then (yes)
+  :Deserialize StoredState;
+  :For each entry in StoredState.workspaces;
+  while (More workspaces?) is (yes)
+    :Reconstruct WorkspaceItem\nfrom Workspace data;
+    :Populate tabs/groups arrays;
+    :Add to workspaceMap;
+  endwhile (no)
+  :Load workspaceOrder from storage;
+  :Release mutex;
+  
+  :WorkspaceService checks for missing workspaces\nnot in workspaceOrder;
+  if (Missing workspaces?) then (yes)
+    :Append missing workspaces\nto workspaceOrder;
+    :WorkspaceStore.SaveToStorage();
+  else (no)
+  endif
+else (no)
+  :Initialize empty workspaceMap;
+  :Initialize empty workspaceOrder;
+  :Initialize empty activeWorkspaces;
+  :Release mutex;
+endif
+
+:Load activeWorkspaces mapping\n(workspace name -> windowId);
+:Rebuild activeWorkspaceReverseMap\n(windowId -> workspace name);
+:WorkspaceService ready;
+
+stop
+
+@enduml

@@ -1,0 +1,23 @@
+@startuml
+title Sequence - Workspace Retrieval (Create on Fly)
+
+actor System
+participant "WorkspaceService" as Service
+participant "WorkspaceBuilder" as Builder
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+System -> Service: retrieveWorkspace(name, opt)
+
+Service -> Service: check workspaceMap
+
+alt Workspace found
+  Service --> System: return WorkspaceItem
+else Not found and createIfMissing=true
+  Service -> Service: createWorkspace(name)\n(see 01-workspace-creation sequence)
+  Service --> System: return WorkspaceItem
+else Not found and createIfMissing=false
+  Service --> System: return null
+end
+
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+title Sequence - Workspace Saving to Storage
+
+participant "WorkspaceItem" as Item
+participant "WorkspaceService" as Service
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+Item -> Store: SaveToStorage()
+
+Store -> Store: acquire mutex
+Store -> Store: serialize workspaceMap\nto StoredState format
+Store -> Storage: set(STORAGE_KEY, state)
+Storage --> Store: ok
+Store -> Store: update updatedAt timestamp\nin WorkspaceItem
+Store -> Store: release mutex
+
+Store --> Item: save complete
+
+@enduml

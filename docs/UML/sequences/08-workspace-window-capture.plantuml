@@ -1,0 +1,46 @@
+@startuml
+title Sequence - Workspace Window Capture
+
+participant "WorkspaceListener\nAuto-save" as Listener
+participant "WorkspaceItem" as Item
+participant "Chrome APIs" as Chrome
+participant "WorkspaceService" as Service
+participant "WorkspaceStore" as Store
+database "chrome.storage.local" as Storage
+
+Listener -> Listener: scheduleSave(windowId)\n[500ms debounce]
+
+Listener -> Item: captureWindowSnapshot(windowId)
+
+Item -> Chrome: query chrome.windows.get(windowId)
+Chrome --> Item: window object
+
+Item -> Chrome: query chrome.tabs.query({windowId})
+Chrome --> Item: tabs[] array
+
+Item -> Chrome: query chrome.tabGroups.query({windowId})
+Chrome --> Item: tabGroups[] array
+
+Item -> Item: for each tab:
+Item -> Item:   extract url, title, active\n  pinned, index, favIconUrl\n  discarded, groupId
+
+Item -> Item: for each tabGroup:
+Item -> Item:   extract title, color\n  collapsed status\n  create StoredGroup
+
+Item -> Item: build StoredTab[] array
+Item -> Item: build StoredGroup[] array
+Item -> Item: set updatedAt timestamp
+
+Item --> Listener: snapshot complete
+
+Listener -> Service: notifySaveRequired()
+Service -> Service: update workspaceMap\nwith modified WorkspaceItem
+
+Service -> Store: SaveToStorage()
+Store -> Store: acquire mutex
+Store -> Storage: set(STORAGE_KEY, state)
+Storage --> Store: ok
+Store -> Store: release mutex
+Store --> Service: save complete
+
+@enduml

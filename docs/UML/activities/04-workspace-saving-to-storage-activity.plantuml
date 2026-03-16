@@ -1,0 +1,16 @@
+@startuml
+title Activity - Workspace Saving to Storage
+
+start
+:WorkspaceItem detects changes\n(tabs, groups, activeWindowId);
+:WorkspaceItem.SaveToStorage();
+:WorkspaceStore acquires mutex internally;
+:Serialize workspaceMap\nto StoredState format;
+:Write to chrome.storage.local;
+:Update updatedAt timestamp\nin WorkspaceItem;
+:Release mutex;
+:Save complete;
+
+stop
+
+@enduml

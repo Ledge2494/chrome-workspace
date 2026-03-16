@@ -1,0 +1,41 @@
+@startuml
+title Activity - Workspace Import
+
+start
+:User uploads JSON file;
+:Parse JSON;
+:importWorkspacesFromJson(json);
+:Validate JSON schema;
+
+if (Valid?) then (no)
+  :Return error;
+  stop
+else (yes)
+  :Detect version;
+  if (Version matches current?) then (no)
+    :Apply migration converters;
+    while (More converters?) is (yes)
+      :Convert schema to next version;
+    endwhile (no)
+  else (yes)
+  endif
+  
+  :Extract workspaces from JSON;
+  
+  if (Merge mode?) then (yes)
+    :Check for name conflicts;
+    :Deduplicate/rename as needed;
+    :Merge into workspaceMap;
+  else (replace mode)
+    :Clear workspaceMap;
+  endif
+  
+  :WorkspaceStore.SaveToStorage();
+  :WorkspaceStore acquires mutex internally;
+  :Release mutex;
+  :Return success(count);
+endif
+
+stop
+
+@enduml
