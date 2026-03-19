@@ -93,6 +93,7 @@ I still have some other feature I want to see in this extension:
 - [ ] Add custom sidebar (not sure if possible)
 - [ ] Add sidebar entry for brave native sidebar
 - [ ] Edit Workspace (icon and name)
+- [ ] Save Tab History
 
 Have other ideas? let me know by opening an [issue](https://github.com/Ledge2494/chrome-workspace/issues/new/choose)
 
