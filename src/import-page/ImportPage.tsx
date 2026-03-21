@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from 'preact/compat';
-import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
+import { importFromJson } from '@src/workspaceAPI/import';
 
 const ImportPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
@@ -12,14 +13,14 @@ const ImportPage = () => {
     }, 1000);
 
     // Open file dialog after 5 seconds
-    const dialogTimer = setTimeout(() => {
+    dialogTimerRef.current = setTimeout(() => {
       fileInputRef.current?.click();
     }, 5000);
 
     // Cleanup timers
     return () => {
       clearInterval(timer);
-      clearTimeout(dialogTimer);
+      if (dialogTimerRef.current) clearTimeout(dialogTimerRef.current);
     };
   }, []);
 
@@ -29,8 +30,7 @@ const ImportPage = () => {
 
     try {
       const content = await file.text();
-      const service = await getWorkspaceService();
-      await service.importWorkspacesFromJson(content, 'merge');
+      await importFromJson(content, { writeToState: true });
       console.log('Import workspaces completed');
       window.close();
     } catch (error) {
@@ -39,6 +39,10 @@ const ImportPage = () => {
   };
 
   const handleClick = () => {
+    // Cancel the automatic dialog timer when user manually opens it
+    if (dialogTimerRef.current) {
+      clearTimeout(dialogTimerRef.current);
+    }
     fileInputRef.current?.click();
   };
 
