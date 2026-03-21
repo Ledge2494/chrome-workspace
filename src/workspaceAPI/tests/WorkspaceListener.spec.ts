@@ -48,6 +48,7 @@ describe('WorkspaceListener', () => {
         onCreated: { addListener: jest.fn() },
         onUpdated: { addListener: jest.fn() },
         onRemoved: { addListener: jest.fn() },
+        onMoved: { addListener: jest.fn() },
       },
       runtime: {
         onMessage: { addListener: jest.fn() },
