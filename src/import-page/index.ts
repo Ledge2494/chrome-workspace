@@ -1,4 +1,4 @@
-import { importFromJson } from '@src/workspaceAPI/import';
+import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
 
 const fileChooser = document.getElementById('import-file') as HTMLInputElement;
 
@@ -9,7 +9,8 @@ fileChooser.addEventListener('change', async function () {
 
   try {
     const content = await file.text();
-    await importFromJson(content);
+    const service = await getWorkspaceService();
+    await service.importWorkspacesFromJson(content, 'merge');
     console.log('Import workspaces completed');
     // Close the window after successful import
     window.close();

@@ -1,0 +1,22 @@
+@startuml
+title Activity - Runtime Background Listener Installation
+
+start
+:Background bootstrap calls\ninstallRuntimeBackgroundListeners();
+
+if (Already installed?) then (yes)
+  :Return no-op;
+  stop
+else (no)
+  :Resolve WorkspaceListener from runtime;
+  :Resolve WorkspaceService from runtime;
+  :Register chrome.runtime.onMessage handler;
+
+  :On SWITCH message;
+  :Invoke WorkspaceService.switchWorkspace(name, windowId);
+  :Send async response {onGoing:false};
+  :Return installed;
+  stop
+endif
+
+@enduml

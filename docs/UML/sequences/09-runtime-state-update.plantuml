@@ -1,0 +1,30 @@
+@startuml
+title Sequence - Runtime State Update Migration
+
+participant "Background\nBootstrap" as Bootstrap
+participant "WorkspaceRuntime" as Runtime
+participant "WorkspaceStore" as Store
+participant "WorkspaceService" as Service
+database "chrome.storage.local" as Storage
+
+Bootstrap -> Runtime: updateWorkspaceRuntimeState()
+
+Runtime -> Store: readState()
+Store -> Storage: get(STORAGE_KEY)
+Storage --> Store: StoredState
+Store --> Runtime: state
+
+alt state.version == package.version
+  Runtime --> Bootstrap: no-op
+else migration required
+  Runtime -> Service: importWorkspacesFromJson(JSON.stringify(state), "replace")
+  Service -> Service: normalizeImportPayload()
+  Service -> Store: SaveToStorage()
+  Store -> Storage: set(STORAGE_KEY, migratedState)
+  Storage --> Store: ok
+  Store --> Service: save complete
+  Service --> Runtime: migration complete
+  Runtime --> Bootstrap: success
+end
+
+@enduml

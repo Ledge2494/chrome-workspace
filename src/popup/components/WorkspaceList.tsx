@@ -1,14 +1,9 @@
 import { useCallback, useEffect } from 'preact/compat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { WorkspaceButton } from '../../components/workspaceButton/WorkspaceButton';
-import { listWorkspaces } from '@src/workspaceAPI/list';
-import { deleteWorkspace } from '@src/workspaceAPI/delete';
 import { Workspace } from '@src/workspaceAPI/workspaceType';
-import {
-  getCurrentActiveWorkspaceName,
-  getActiveWorkspaces,
-} from '@src/workspaceAPI/toolbox';
-import { BackgroundMessageEnum } from '@src/workspaceAPI/listener';
+import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
+import { BackgroundMessageEnum } from '@src/workspaceAPI/WorkspaceListener';
 import useContextMenu from '@src/components/contextMenu/useContextMenu';
 
 interface WorkspaceListProps {
@@ -30,7 +25,13 @@ export const WorkspaceList = ({
     data: workspaceList,
   } = useQuery({
     queryKey: ['workspaces'],
-    queryFn: listWorkspaces,
+    queryFn: async () => {
+      const service = await getWorkspaceService();
+      const workspaces = await service.listWorkspaces({
+        orderType: 'createdAt-asc',
+      });
+      return workspaces.map(workspace => workspace.toWorkspace());
+    },
   });
 
   const {
@@ -39,17 +40,24 @@ export const WorkspaceList = ({
     data: activeWorkspace,
   } = useQuery({
     queryKey: ['activeWorkspaceName'],
-    queryFn: async () => (await getCurrentActiveWorkspaceName()) || '',
+    queryFn: async () => {
+      const service = await getWorkspaceService();
+      return (await service.getCurrentActiveWorkspaceName()) || '';
+    },
   });
 
   const { data: allActiveWorkspaces = {} } = useQuery({
     queryKey: ['allActiveWorkspaces'],
-    queryFn: getActiveWorkspaces,
+    queryFn: async () => {
+      const service = await getWorkspaceService();
+      return service.getActiveWorkspaces();
+    },
   });
 
   const workspaceMutationDelete = useMutation({
     mutationFn: async (name: string) => {
-      const result = await deleteWorkspace(name);
+      const service = await getWorkspaceService();
+      const result = await service.deleteWorkspace(name);
       if (!result) return false;
       return name;
     },
@@ -109,7 +117,7 @@ export const WorkspaceList = ({
   );
 
   if (isWorkspaceListPending || isWorkspaceListError) {
-    return null;
+    return <section id='workspaces-list' />;
   }
 
   return (

@@ -1,0 +1,22 @@
+@startuml
+title Activity - Runtime State Update Migration
+
+start
+:Background bootstrap starts;
+:WorkspaceRuntime.updateWorkspaceRuntimeState();
+:WorkspaceStore.readState();
+
+if (State version current?) then (yes)
+  :Return no-op;
+  stop
+else (no)
+  :Serialize state to JSON;
+  :WorkspaceService.importWorkspacesFromJson(json, replace);
+  :Normalize payload by version;
+  :WorkspaceStore.SaveToStorage();
+  :Persist migrated state in chrome.storage.local;
+  :Return success;
+  stop
+endif
+
+@enduml

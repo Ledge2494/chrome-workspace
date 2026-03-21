@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'preact/compat';
-import { importFromJson } from '@src/workspaceAPI/import';
+import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
 
 const ImportPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +29,8 @@ const ImportPage = () => {
 
     try {
       const content = await file.text();
-      await importFromJson(content);
+      const service = await getWorkspaceService();
+      await service.importWorkspacesFromJson(content, 'merge');
       console.log('Import workspaces completed');
       window.close();
     } catch (error) {

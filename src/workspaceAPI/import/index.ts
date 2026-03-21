@@ -2,7 +2,7 @@ import { importFromJson001 } from './0.0.1';
 import { importFromJson002 } from './0.0.2';
 import packageJson from '../../../package.json';
 import { StoredState, Workspace } from '../workspaceType';
-import { readState, writeState } from '../toolbox';
+import { getWorkspaceService } from '../workspaceRuntime';
 
 interface ImportPayload {
   version?: string;
@@ -12,6 +12,7 @@ interface ImportPayload {
 interface ImportOptions {
   // Define any options needed for the import process
   writeToState?: boolean; // Whether to write the imported state back to storage
+  mode?: 'merge' | 'replace';
 }
 
 type versionedImportPayloads =
@@ -29,48 +30,6 @@ const importers = {
 } as const;
 
 const currentImporterVersion = importFromJson002;
-
-async function mergeImportedWorkspaces(
-  importedPayload: StoredState
-): Promise<boolean> {
-  const state = await readState();
-  if (!state) return false;
-
-  // Merge workspaces, giving precedence to imported ones
-  for (const [id, workspace] of Object.entries(importedPayload.workspaces)) {
-    // If Workspace with the same ID exists, merge tabs content
-    if (state.workspaces[id]) {
-      const existingWorkspace = state.workspaces[id];
-      const mergedTabs = [
-        ...existingWorkspace.tabs,
-        ...workspace.tabs.filter(
-          tab => !existingWorkspace.tabs.some(t => t.url === tab.url)
-        ),
-      ];
-      state.workspaces[id] = {
-        ...existingWorkspace,
-        tabs: mergedTabs,
-      };
-    } else {
-      // If no conflict, simply add the imported workspace
-      state.workspaces[id] = workspace;
-    }
-  }
-
-  // Update workspaceOrder to include any new workspaces, while preserving existing order
-  const existingOrder = state.workspaceOrder || [];
-  const importedOrder = importedPayload.workspaceOrder || [];
-  const newOrder = [
-    ...existingOrder,
-    ...importedOrder.filter(name => !existingOrder.includes(name)),
-  ];
-  state.workspaceOrder = newOrder;
-
-  // Write the merged state back to storage
-  await writeState(state);
-
-  return true;
-}
 
 /**
  * Import workspaces from JSON
@@ -113,15 +72,16 @@ export async function importFromJson(
   // From this point on, payload is of type StoredState
 
   if (!payload) return null;
-  if (opts?.writeToState) {
-    if (!mergeImportedWorkspaces(payload as StoredState)) {
-      console.error('Failed to merge imported workspaces with existing state');
-      return null;
-    }
+  if (opts?.writeToState !== false) {
+    const service = await getWorkspaceService();
+    await service.applyImportedState(
+      payload as StoredState,
+      opts?.mode || 'merge'
+    );
     return Object.values((payload as StoredState).workspaces);
   }
 
-  // Apply the final import with the converted payload
+  // Return the final import with the converted payload
   return payload as StoredState;
 }
 

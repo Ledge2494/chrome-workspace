@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/compat';
 import debounce from 'lodash/debounce';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createWorkspace } from '@src/workspaceAPI/create';
+import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
 
 interface WorkspaceCreateProps {
   isVisible: boolean;
@@ -25,8 +25,11 @@ export const WorkspaceCreate = ({
   const logoImgRef = useRef<HTMLElement>(null);
 
   const workspaceMutationAdd = useMutation({
-    mutationFn: ({ name, logo }: { name: string; logo: string }) =>
-      createWorkspace(name, logo),
+    mutationFn: async ({ name, logo }: { name: string; logo: string }) => {
+      const service = await getWorkspaceService();
+      const workspace = await service.createWorkspace(name, logo);
+      return workspace.toWorkspace();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       setCreateWorkspaceLogo(defaultWorkspaceLogo);

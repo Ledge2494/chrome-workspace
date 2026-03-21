@@ -1,13 +1,15 @@
 import { Menu, MenuItem } from '@szhsin/react-menu';
 import { useQuery } from '@tanstack/react-query';
-import { exportSingleWorkspace } from '@src/workspaceAPI/export';
-import { getCurrentActiveWorkspaceName } from '@src/workspaceAPI/toolbox';
+import { getWorkspaceService } from '@src/workspaceAPI/workspaceRuntime';
 import '../style.css';
 
 export const WorkspaceExtra = () => {
   const { data: activeWorkspace } = useQuery({
     queryKey: ['activeWorkspaceName'],
-    queryFn: getCurrentActiveWorkspaceName,
+    queryFn: async () => {
+      const service = await getWorkspaceService();
+      return service.getCurrentActiveWorkspaceName();
+    },
   });
 
   const handleImportClick = async () => {
@@ -24,7 +26,9 @@ export const WorkspaceExtra = () => {
     }
 
     try {
-      const jsonContent = await exportSingleWorkspace(activeWorkspace);
+      const service = await getWorkspaceService();
+      const jsonContent =
+        await service.exportSingleWorkspaceToJson(activeWorkspace);
 
       // Create blob and download
       const blob = new Blob([jsonContent], { type: 'application/json' });

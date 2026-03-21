@@ -1,0 +1,30 @@
+@startuml
+title Sequence - Runtime Background Listener Installation
+
+participant "Background\nBootstrap" as Bootstrap
+participant "WorkspaceRuntime" as Runtime
+participant "WorkspaceListener" as Listener
+participant "WorkspaceService" as Service
+participant "Chrome Runtime API" as ChromeRuntime
+
+Bootstrap -> Runtime: installRuntimeBackgroundListeners()
+
+Runtime -> Runtime: check installed guard
+alt already installed
+  Runtime --> Bootstrap: no-op
+else first install
+  Runtime -> Runtime: getWorkspaceListener()
+  Runtime -> Runtime: getWorkspaceService()
+  Runtime -> Listener: installBackgroundListeners(handler)
+  Listener -> ChromeRuntime: onMessage.addListener(...)
+  ChromeRuntime --> Listener: registered
+
+  ChromeRuntime -> Listener: onMessage(SWITCH, payload)
+  Listener -> Service: switchWorkspace(payload.workspaceName, payload.windowId)
+  Service --> Listener: done
+  Listener --> ChromeRuntime: sendResponse({onGoing:false})
+
+  Runtime --> Bootstrap: installed
+end
+
+@enduml
