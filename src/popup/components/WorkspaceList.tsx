@@ -177,7 +177,14 @@ export const WorkspaceList = ({
           ))}
         </div>
       </div>
-      <div>
+      <div
+        style={{
+          width: '56px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
           Create
         </span>
