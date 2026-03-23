@@ -126,49 +126,72 @@ export const WorkspaceList = ({
       style={{
         display: 'flex',
         flexDirection: 'row',
-        gap: '4px',
-        fontSize: '18px',
-        flexWrap: 'wrap',
       }}
     >
-      {workspaceList.map(wk => (
+      <div>
+        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          Select
+        </span>
         <div
-          key={wk.name}
-          onContextMenu={e => {
-            if (activeWorkspace === undefined) return;
-            const isActiveInOtherWindow =
-              wk.name in allActiveWorkspaces && wk.name !== activeWorkspace;
-            if (isActiveInOtherWindow) return;
-            workspaceMenuItems(wk);
-            handleContextMenu(e);
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '4px',
+            fontSize: '18px',
+            flexWrap: 'wrap',
           }}
         >
-          <WorkspaceButton
-            className={
-              wk.name === activeWorkspace
-                ? 'workspace-button-active'
-                : wk.name in allActiveWorkspaces
-                ? 'workspace-button-blocked'
-                : activeWorkspace === undefined
-                ? 'workspace-button-disable'
-                : ''
-            }
-            logo={wk.logo}
-            onClick={() => {
-              const isActiveInOtherWindow =
-                wk.name in allActiveWorkspaces && wk.name !== activeWorkspace;
-              if (activeWorkspace !== undefined && !isActiveInOtherWindow) {
-                handleSwitchWorkspace(wk.name);
-              }
-            }}
-          />
+          {workspaceList.map(wk => (
+            <div
+              key={wk.name}
+              onContextMenu={e => {
+                if (activeWorkspace === undefined) return;
+                const isActiveInOtherWindow =
+                  wk.name in allActiveWorkspaces && wk.name !== activeWorkspace;
+                if (isActiveInOtherWindow) return;
+                workspaceMenuItems(wk);
+                handleContextMenu(e);
+              }}
+            >
+              <WorkspaceButton
+                className={
+                  wk.name === activeWorkspace
+                    ? 'workspace-button-active'
+                    : wk.name in allActiveWorkspaces
+                    ? 'workspace-button-blocked'
+                    : activeWorkspace === undefined
+                    ? 'workspace-button-disable'
+                    : ''
+                }
+                logo={wk.logo}
+                onClick={() => {
+                  const isActiveInOtherWindow =
+                    wk.name in allActiveWorkspaces &&
+                    wk.name !== activeWorkspace;
+                  if (activeWorkspace !== undefined && !isActiveInOtherWindow) {
+                    handleSwitchWorkspace(wk.name);
+                  }
+                }}
+              />
+            </div>
+          ))}
         </div>
-      ))}
-      <WorkspaceButton
-        logo='fi fi-rr-add'
-        style={{ marginLeft: '12px' }}
-        onClick={onAddWorkspace}
-      />
+      </div>
+      <div>
+        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          Create
+        </span>
+        <div
+          style={{
+            fontSize: '18px',
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'center',
+          }}
+        >
+          <WorkspaceButton logo='fi fi-rr-add' onClick={onAddWorkspace} />
+        </div>
+      </div>
       <ContextMenu />
     </section>
   );

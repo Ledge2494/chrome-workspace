@@ -47,13 +47,19 @@ export const WorkspaceExtra = () => {
 
   return (
     <section id='workspace-extra' style={{ display: 'flex' }}>
+      <span
+        style={{
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          marginLeft: 'auto',
+          marginRight: '12px',
+        }}
+      >
+        Options
+      </span>
       <Menu
         menuButton={
-          <button
-            style={{
-              marginLeft: 'auto',
-            }}
-          >
+          <button>
             <i className='fi fi-rr-angle-small-down' />
           </button>
         }

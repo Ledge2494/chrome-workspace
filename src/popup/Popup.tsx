@@ -18,7 +18,7 @@ const Popup = () => {
   return (
     <main
       style={{
-        minWidth: '212px',
+        minWidth: '220px',
         maxWidth: '800px',
         minHeight: `${contextMenuHeight}px`,
         maxHeight: '600px',
