@@ -128,6 +128,7 @@ export const WorkspaceList = ({
         flexDirection: 'row',
         gap: '4px',
         fontSize: '18px',
+        flexWrap: 'wrap',
       }}
     >
       {workspaceList.map(wk => (
