@@ -1,61 +1,68 @@
-import { Workspace, StoredState } from '../workspaceType';
-
-export interface ImportPayload002 {
-  // format version (e.g. "0.0.2")
-  version: string;
-  // mapping workspace name -> workspace
-  workspaces: Record<string, Workspace>;
-
-  // No active workspace in the file for this version
-  // mapping workspace name -> window ID for currently active workspaces
-  // activeWorkspaces: Record<string, number>;
-
-  // ordered list of workspace names
-  workspaceOrder: string[];
-}
+import { ImportPayload002Schema } from './schemas';
+import { StoredState, Workspace } from '../workspaceType';
 
 /**
  * Importer for version 0.0.2 (current)
+ * @throws {z.ZodError} if the payload structure is invalid
  */
-async function importFromJson002(
-  payload: ImportPayload002
-): Promise<StoredState> {
-  const incomingWorkspaces = (payload.workspaces || payload) as Record<
-    string,
-    Workspace
-  >;
+async function importFromJson002(payload: unknown): Promise<StoredState> {
+  const validatedPayload = ImportPayload002Schema.parse(payload);
 
-  const imported: string[] = [];
-  const state: StoredState = {
-    workspaces: {},
-    workspaceOrder: [],
-    version: payload.version || '0.0.2',
-    // No active workspace info in this version, so start with empty
-    activeWorkspaces: {},
-  };
+  // Deduplicate workspaces by name, keeping the most recently updated one
+  const workspaceMap: Record<string, Workspace> = {};
 
-  for (const name of Object.keys(incomingWorkspaces)) {
-    const wk = incomingWorkspaces[name];
-    let targetName = name;
-    // avoid name collision
-    if (state.workspaces[targetName]) {
-      targetName = `${targetName}_${Date.now()}`;
+  for (const [name, workspace] of Object.entries(validatedPayload.workspaces)) {
+    if (
+      !workspaceMap[name] ||
+      workspace.updatedAt > workspaceMap[name].updatedAt
+    ) {
+      workspaceMap[name] = workspace;
     }
-    wk.name = targetName;
-    state.workspaces[targetName] = wk;
-
-    // Add to workspaceOrder if not present
-    if (!state.workspaceOrder) {
-      state.workspaceOrder = [];
-    }
-    if (!state.workspaceOrder.includes(targetName)) {
-      state.workspaceOrder.push(targetName);
-    }
-
-    imported.push(targetName);
   }
 
-  return state;
+  // Reconstruct the workspaces object with deduplicated entries
+  const deduplicatedWorkspaces: Record<string, Workspace> = {};
+  for (const [name, workspace] of Object.entries(workspaceMap)) {
+    deduplicatedWorkspaces[name] = workspace;
+  }
+
+  // Filter activeWorkspaces to only include workspaces that exist
+  const workspaceNames = Object.keys(deduplicatedWorkspaces);
+  const filteredActiveWorkspaces: Record<string, number> = {};
+
+  for (const [name, windowId] of Object.entries(
+    validatedPayload.activeWorkspaces || {}
+  )) {
+    if (workspaceNames.includes(name)) {
+      filteredActiveWorkspaces[name] = windowId;
+    }
+  }
+
+  // Deduplication, filtering and completeness check for workspaceOrder
+  const workspaceOrderSet = new Set(validatedPayload.workspaceOrder);
+  const finalWorkspaceOrder: string[] = [];
+
+  for (const name of validatedPayload.workspaceOrder) {
+    if (workspaceNames.includes(name) && !finalWorkspaceOrder.includes(name)) {
+      finalWorkspaceOrder.push(name);
+    }
+  }
+
+  // Add any workspaces that are missing from workspaceOrder at the end
+  for (const name of workspaceNames) {
+    if (!workspaceOrderSet.has(name)) {
+      finalWorkspaceOrder.push(name);
+    }
+  }
+
+  // At this point, the payload is valid and can be returned as StoredState
+
+  return {
+    workspaces: deduplicatedWorkspaces,
+    workspaceOrder: finalWorkspaceOrder,
+    version: '0.0.2',
+    activeWorkspaces: filteredActiveWorkspaces,
+  };
 }
 
 export { importFromJson002 };

@@ -1,23 +1,15 @@
-import { Workspace } from '../workspaceType';
-import { ImportPayload002 } from './0.0.2';
-
-export interface ImportPayload001 {
-  activeWorkspaceName: string;
-  workspaces: Record<string, Workspace>;
-}
+import { ImportPayload001Schema, ImportPayload002 } from './schemas';
 
 /**
  * Converter for version 0.0.1 -> 0.0.2
  * Converts the format from 0.0.1 to 0.0.2 (no state writes)
+ * @throws {z.ZodError} if the payload structure is invalid
  */
-async function importFromJson001(
-  payload: ImportPayload001
-): Promise<ImportPayload002> {
-  const incomingWorkspaces = (payload.workspaces || payload) as Record<
-    string,
-    Workspace
-  >;
+async function importFromJson001(payload: unknown): Promise<ImportPayload002> {
+  // Validate and parse the incoming payload
+  const validatedPayload = ImportPayload001Schema.parse(payload);
 
+  const incomingWorkspaces = validatedPayload.workspaces;
   const workspaceOrder = Object.keys(incomingWorkspaces);
 
   return {
