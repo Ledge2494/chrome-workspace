@@ -220,7 +220,8 @@ export class WorkspaceService {
 
   async restoreWorkspace(
     windowId: number,
-    workspaceName: string
+    workspaceName: string,
+    options?: { skipGroups?: boolean }
   ): Promise<void> {
     await this.initialize();
 
@@ -237,6 +238,7 @@ export class WorkspaceService {
     const createdTabIds: number[] = [];
     for (let i = 0; i < workspace.tabs.length; i += 1) {
       const tab = workspace.tabs[i];
+      if (options?.skipGroups && !tab.groupIndex) continue;
       const created = await chrome.tabs.create({
         windowId,
         url: tab.url || 'chrome://newtab',
@@ -250,31 +252,33 @@ export class WorkspaceService {
       }
     }
 
-    const groupIndexToTabIds = new Map<number, number[]>();
-    workspace.tabs.forEach((tab, index) => {
-      if (typeof tab.groupIndex !== 'number') return;
-      const ids = groupIndexToTabIds.get(tab.groupIndex) || [];
-      const createdTabId = createdTabIds[index];
-      if (typeof createdTabId === 'number') {
-        ids.push(createdTabId);
-      }
-      groupIndexToTabIds.set(tab.groupIndex, ids);
-    });
-
-    for (const [groupIndex, tabIds] of groupIndexToTabIds) {
-      if (!tabIds.length) continue;
-      try {
-        const groupId = await chrome.tabs.group({ tabIds });
-        const group = workspace.groups[groupIndex];
-        if (group) {
-          await chrome.tabGroups.update(groupId, {
-            title: group.title || '',
-            color: group.color || undefined,
-            collapsed: !!group.collapsed,
-          });
+    if (!options?.skipGroups) {
+      const groupIndexToTabIds = new Map<number, number[]>();
+      workspace.tabs.forEach((tab, index) => {
+        if (typeof tab.groupIndex !== 'number') return;
+        const ids = groupIndexToTabIds.get(tab.groupIndex) || [];
+        const createdTabId = createdTabIds[index];
+        if (typeof createdTabId === 'number') {
+          ids.push(createdTabId);
         }
-      } catch {
-        // Ignore grouping failures for partial compatibility across browsers.
+        groupIndexToTabIds.set(tab.groupIndex, ids);
+      });
+
+      for (const [groupIndex, tabIds] of groupIndexToTabIds) {
+        if (!tabIds.length) continue;
+        try {
+          const groupId = await chrome.tabs.group({ tabIds });
+          const group = workspace.groups[groupIndex];
+          if (group) {
+            await chrome.tabGroups.update(groupId, {
+              title: group.title || '',
+              color: group.color || undefined,
+              collapsed: !!group.collapsed,
+            });
+          }
+        } catch {
+          // Ignore grouping failures for partial compatibility across browsers.
+        }
       }
     }
 
@@ -524,7 +528,9 @@ export class WorkspaceService {
       if (!this.workspaceMap[workspaceName]) continue;
 
       await this.setActiveWorkspace(workspaceName, windowId);
-      await this.restoreWorkspace(windowId, workspaceName);
+      await this.restoreWorkspace(windowId, workspaceName, {
+        skipGroups: true,
+      });
     }
 
     this.rebuildActiveReverseMap();
