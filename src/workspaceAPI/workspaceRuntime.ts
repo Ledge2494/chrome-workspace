@@ -2,6 +2,7 @@ import { WorkspaceBuilder } from './WorkspaceBuilder';
 import { WorkspaceListener } from './WorkspaceListener';
 import { WorkspaceService } from './WorkspaceService';
 import { WorkspaceStore } from './WorkspaceStore';
+import { SettingsHandler } from '@src/settingsAPI/settingsHandler';
 import packageJson from '../../package.json';
 
 interface WorkspaceRuntime {
@@ -9,6 +10,7 @@ interface WorkspaceRuntime {
   builder: WorkspaceBuilder;
   service: WorkspaceService;
   listener: WorkspaceListener;
+  settings: SettingsHandler;
 }
 
 let runtimePromise: WorkspaceRuntime | null = null;
@@ -17,8 +19,9 @@ let backgroundListenersInstalled = false;
 async function createRuntime(): Promise<WorkspaceRuntime> {
   const store = new WorkspaceStore();
   const builder = new WorkspaceBuilder();
-  const service = new WorkspaceService(store, builder);
-  const listener = new WorkspaceListener(service);
+  const settings = new SettingsHandler();
+  const service = new WorkspaceService(store, builder, settings);
+  const listener = new WorkspaceListener(service, settings);
   await service.initialize();
 
   return {
@@ -26,6 +29,7 @@ async function createRuntime(): Promise<WorkspaceRuntime> {
     builder,
     service,
     listener,
+    settings,
   };
 }
 
@@ -50,6 +54,11 @@ export async function getWorkspaceStore(): Promise<WorkspaceStore> {
 export async function getWorkspaceListener(): Promise<WorkspaceListener> {
   const runtime = await getWorkspaceRuntime();
   return runtime.listener;
+}
+
+export async function getSettingsHandler(): Promise<SettingsHandler> {
+  const runtime = await getWorkspaceRuntime();
+  return runtime.settings;
 }
 
 export async function updateWorkspaceRuntimeState(): Promise<void> {

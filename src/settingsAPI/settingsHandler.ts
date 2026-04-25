@@ -1,11 +1,24 @@
-import { SettingsSchema } from './settingsType';
+import { SettingItemDescriptor, SettingsSchema } from './settingsType';
 import { defaultSettings } from './settingsDefault';
 
 export class SettingsHandler {
-  private schema: SettingsSchema = defaultSettings;
+  private schema: SettingsSchema;
 
   constructor() {
+    this.schema = this.defaultSettings();
     this.loadSettings();
+  }
+
+  private defaultSettings(): SettingsSchema {
+    const exploitableSettings: SettingsSchema = defaultSettings;
+    Object.values(defaultSettings).forEach(category => {
+      Object.values(category as Record<string, SettingItemDescriptor<unknown>>)
+        .filter(setting => setting.value === undefined)
+        .forEach(setting => {
+          setting.value = setting.defaultValue;
+        });
+    });
+    return exploitableSettings;
   }
 
   private loadSettings() {

@@ -39,9 +39,14 @@ export class WorkspaceItem {
     return 'fi fi-rr-home';
   }
 
-  async captureWindowSnapshot(windowId: number): Promise<boolean> {
+  async captureWindowSnapshot(
+    windowId: number,
+    captureGroups = true
+  ): Promise<boolean> {
     const tabs = await chrome.tabs.query({ windowId });
-    const groups = await chrome.tabGroups.query({ windowId });
+    const groups = captureGroups
+      ? await chrome.tabGroups.query({ windowId })
+      : [];
 
     const groupMap = new Map<number, number>();
     const storedGroups: StoredGroup[] = [];
@@ -64,13 +69,18 @@ export class WorkspaceItem {
       favIconUrl: tab.favIconUrl,
       discarded: !!tab.discarded,
       groupIndex:
-        typeof tab.groupId === 'number' && groupMap.has(tab.groupId)
+        captureGroups &&
+        typeof tab.groupId === 'number' &&
+        groupMap.has(tab.groupId)
           ? groupMap.get(tab.groupId) ?? null
           : null,
     }));
 
     this.tabs = storedTabs;
-    this.groups = storedGroups;
+    // Only update groups if capturing is enabled, otherwise preserve existing groups
+    if (captureGroups) {
+      this.groups = storedGroups;
+    }
     this.updatedAt = Date.now();
 
     return true;

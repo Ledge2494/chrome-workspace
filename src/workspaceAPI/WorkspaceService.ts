@@ -3,6 +3,7 @@ import { StoredState, StoredTab } from './workspaceType';
 import { WorkspaceBuilder } from './WorkspaceBuilder';
 import { WorkspaceItem } from './WorkspaceItem';
 import { WorkspaceStore } from './WorkspaceStore';
+import { SettingsHandler } from '@src/settingsAPI/settingsHandler';
 
 type ListOrderType = 'createdAt-asc' | 'updatedAt-desc' | 'workspaceOrder';
 
@@ -20,6 +21,7 @@ export class WorkspaceService {
 
   private readonly store: WorkspaceStore;
   private readonly builder: WorkspaceBuilder;
+  private readonly settings: SettingsHandler;
 
   private workspaceMap: Record<string, WorkspaceItem> = {};
   private workspaceOrder: string[] = [];
@@ -27,9 +29,14 @@ export class WorkspaceService {
   private workspaceActiveReverseMap: Record<number, string> = {};
   private version = packageJson.version;
 
-  constructor(store: WorkspaceStore, builder: WorkspaceBuilder) {
+  constructor(
+    store: WorkspaceStore,
+    builder: WorkspaceBuilder,
+    settings: SettingsHandler
+  ) {
     this.store = store;
     this.builder = builder;
+    this.settings = settings;
   }
 
   async initialize(): Promise<void> {
@@ -208,7 +215,10 @@ export class WorkspaceService {
     }
 
     const workspace = this.workspaceMap[activeName];
-    await workspace.captureWindowSnapshot(windowId);
+    const settings = this.settings.getSetting();
+    const enableTabGroups = settings.workspace.enableTabGroups.value;
+
+    await workspace.captureWindowSnapshot(windowId, enableTabGroups);
 
     if (workspace.tabs.length === 0) {
       workspace.tabs.push(this.defaultTab());
@@ -228,6 +238,9 @@ export class WorkspaceService {
     if (!workspace) {
       throw new Error(`workspace not found: ${workspaceName}`);
     }
+
+    const settings = this.settings.getSetting();
+    const enableTabGroups = settings.workspace.enableTabGroups.value;
 
     const currentTabs = await chrome.tabs.query({ windowId });
     const currentIds = currentTabs
@@ -250,31 +263,34 @@ export class WorkspaceService {
       }
     }
 
-    const groupIndexToTabIds = new Map<number, number[]>();
-    workspace.tabs.forEach((tab, index) => {
-      if (typeof tab.groupIndex !== 'number') return;
-      const ids = groupIndexToTabIds.get(tab.groupIndex) || [];
-      const createdTabId = createdTabIds[index];
-      if (typeof createdTabId === 'number') {
-        ids.push(createdTabId);
-      }
-      groupIndexToTabIds.set(tab.groupIndex, ids);
-    });
-
-    for (const [groupIndex, tabIds] of groupIndexToTabIds) {
-      if (!tabIds.length) continue;
-      try {
-        const groupId = await chrome.tabs.group({ tabIds });
-        const group = workspace.groups[groupIndex];
-        if (group) {
-          await chrome.tabGroups.update(groupId, {
-            title: group.title || '',
-            color: group.color || undefined,
-            collapsed: !!group.collapsed,
-          });
+    // Only restore tab groups if the feature is enabled
+    if (enableTabGroups) {
+      const groupIndexToTabIds = new Map<number, number[]>();
+      workspace.tabs.forEach((tab, index) => {
+        if (typeof tab.groupIndex !== 'number') return;
+        const ids = groupIndexToTabIds.get(tab.groupIndex) || [];
+        const createdTabId = createdTabIds[index];
+        if (typeof createdTabId === 'number') {
+          ids.push(createdTabId);
         }
-      } catch {
-        // Ignore grouping failures for partial compatibility across browsers.
+        groupIndexToTabIds.set(tab.groupIndex, ids);
+      });
+
+      for (const [groupIndex, tabIds] of groupIndexToTabIds) {
+        if (!tabIds.length) continue;
+        try {
+          const groupId = await chrome.tabs.group({ tabIds });
+          const group = workspace.groups[groupIndex];
+          if (group) {
+            await chrome.tabGroups.update(groupId, {
+              title: group.title || '',
+              color: group.color || undefined,
+              collapsed: !!group.collapsed,
+            });
+          }
+        } catch {
+          // Ignore grouping failures for partial compatibility across browsers.
+        }
       }
     }
 

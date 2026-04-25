@@ -25,16 +25,16 @@ This Brave/Chromium extension saves and restores tab "workspaces" (all open wind
 
 - Save current session as a workspace
 - Switch workspaces (saves current, closes current tabs, and restores target workspace)
-- Preserve tab groups where possible
+- ~~Preserve tab groups where possible~~ (see this [issue](https://github.com/Ledge2494/chrome-workspace/issues/1) for the reason)
 - Export/import workspaces as JSON
 
 ### Usage <a name="usage"></a>
 
 - Click the extension icon at the right of the address bar.
 - Click on the "+" to add a new workspace.
-  * Add a unique name
-  * Add an icon from [flaticon](https://www.flaticon.com/search?word=%20&weight=regular&corner=rounded&type=uicon) (click on the wanted icon and copy/paste the text starting with `<i class`)
-  * Click on create and you have a new workspace
+  - Add a unique name
+  - Add an icon from [flaticon](https://www.flaticon.com/search?word=%20&weight=regular&corner=rounded&type=uicon) (click on the wanted icon and copy/paste the text starting with `<i class`)
+  - Click on create and you have a new workspace
 - Click on workspace logo to switch between workspace
 - Right click on workspace logo to delete workspace
 - Click on the arrow (bottom left of the popup) to open import/export options
@@ -42,7 +42,7 @@ This Brave/Chromium extension saves and restores tab "workspaces" (all open wind
 ### Notes & limitations <a name="notes"></a>
 
 - Switching closes all current tabs before restoring the target workspace. Unsaved work in tabs will be lost—save any forms before switching.
-- Installing this extension on bloated browser is not recommended (tested only on single bloated window)
+- There is currently [a bug with tab groups](https://github.com/Ledge2494/chrome-workspace/issues/1) rendering their management impossible with this extension.
 - The logos and UI are temporary and kinda bad, I'm sorry for this and will try to improve it.
 
 ### Security <a name="security"></a>

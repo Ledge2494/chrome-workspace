@@ -1,5 +1,6 @@
 import debounce from 'lodash/debounce';
 import { WorkspaceService } from './WorkspaceService';
+import { SettingsHandler } from '@src/settingsAPI/settingsHandler';
 
 export const enum BackgroundMessageEnum {
   SWITCH,
@@ -15,6 +16,7 @@ export type BackgroundResponse = { onGoing: boolean } | { error?: string };
 
 export class WorkspaceListener {
   private readonly service: WorkspaceService;
+  private readonly settings: SettingsHandler;
 
   private readonly saveMap = new Map<number, ReturnType<typeof debounce>>();
   private autoSaveInstalled = false;
@@ -23,13 +25,17 @@ export class WorkspaceListener {
   private suspended = false;
   private restoringAfterRestart = false;
 
-  constructor(service: WorkspaceService) {
+  constructor(service: WorkspaceService, settings: SettingsHandler) {
     this.service = service;
+    this.settings = settings;
   }
 
   installAutoSaveListeners(): void {
     if (this.autoSaveInstalled) return;
     this.autoSaveInstalled = true;
+
+    const settings = this.settings.getSetting();
+    const enableTabGroups = settings.workspace.enableTabGroups.value;
 
     chrome.windows.onCreated.addListener(window => {
       if (typeof window.id !== 'number') return;
@@ -65,21 +71,24 @@ export class WorkspaceListener {
       this.scheduleSave(detachInfo.oldWindowId);
     });
 
-    chrome.tabGroups.onCreated.addListener(group => {
-      this.scheduleSave(group.windowId);
-    });
+    // Only install tabGroups listeners if the feature is enabled
+    if (enableTabGroups) {
+      chrome.tabGroups.onCreated.addListener(group => {
+        this.scheduleSave(group.windowId);
+      });
 
-    chrome.tabGroups.onUpdated.addListener(group => {
-      this.scheduleSave(group.windowId);
-    });
+      chrome.tabGroups.onUpdated.addListener(group => {
+        this.scheduleSave(group.windowId);
+      });
 
-    chrome.tabGroups.onRemoved.addListener(group => {
-      this.scheduleSave(group.windowId);
-    });
+      chrome.tabGroups.onRemoved.addListener(group => {
+        this.scheduleSave(group.windowId);
+      });
 
-    chrome.tabGroups.onMoved.addListener(group => {
-      this.scheduleSave(group.windowId);
-    });
+      chrome.tabGroups.onMoved.addListener(group => {
+        this.scheduleSave(group.windowId);
+      });
+    }
   }
 
   installBackgroundListeners(
